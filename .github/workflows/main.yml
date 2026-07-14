@@ -1,0 +1,45 @@
+name: API Test Suite
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * *"  # nightly full regression run
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run smoke tests (PRs)
+        if: github.event_name == 'pull_request'
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: pytest -m smoke --html=reports/report.html --self-contained-html
+
+      - name: Run full regression suite (main branch / nightly)
+        if: github.event_name != 'pull_request'
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: pytest --html=reports/report.html --self-contained-html
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-html-report
+          path: reports/report.html
