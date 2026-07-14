@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Movie",
+  "type": "object",
+  "required": ["id", "title", "release_date", "vote_average", "genre_ids", "overview"],
+  "properties": {
+    "id": { "type": "integer" },
+    "title": { "type": "string", "minLength": 1 },
+    "release_date": { "type": "string" },
+    "vote_average": { "type": "number", "minimum": 0, "maximum": 10 },
+    "genre_ids": {
+      "type": "array",
+      "items": { "type": "integer" }
+    },
+    "overview": { "type": "string" },
+    "popularity": { "type": "number" },
+    "adult": { "type": "boolean" }
+  }
+}

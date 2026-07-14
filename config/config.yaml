@@ -1,0 +1,4 @@
+base_url: "https://api.themoviedb.org/3"
+timeout: 10
+max_retries: 3
+backoff_factor: 0.5
