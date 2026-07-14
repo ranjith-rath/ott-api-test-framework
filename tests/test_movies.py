@@ -22,16 +22,39 @@ def test_popular_movies_returns_results(api_client):
 
 
 @pytest.mark.regression
-def test_popular_movies_pagination(api_client):
-    page_1 = api_client.get(Endpoints.POPULAR_MOVIES, params={"page": 1}).json()
-    page_2 = api_client.get(Endpoints.POPULAR_MOVIES, params={"page": 2}).json()
+def test_pagination_returns_distinct_pages(api_client):
+    """Verify pagination returns different items per page.
+
+    Uses /movie/top_rated instead of /movie/popular: the popular list
+    re-sorts continuously by live popularity score, so an item can drift
+    across the page boundary between two calls and appear on both pages —
+    a false failure. Top-rated ordering is stable.
+    """
+    resp_1 = api_client.get(Endpoints.TOP_RATED, params={"page": 1})
+    resp_2 = api_client.get(Endpoints.TOP_RATED, params={"page": 2})
+
+    # Assert status BEFORE .json() — a 5xx error body isn't JSON,
+    # and calling .json() on it raises a misleading decode error.
+    assert resp_1.status_code == 200
+    assert resp_2.status_code == 200
+
+    page_1 = resp_1.json()
+    page_2 = resp_2.json()
+
+    # The API should echo back the page we requested
+    assert page_1["page"] == 1
+    assert page_2["page"] == 2
+
+    # Both pages should actually contain results (guard against
+    # vacuously passing on empty lists)
+    assert page_1["results"], "Page 1 returned no results"
+    assert page_2["results"], "Page 2 returned no results"
 
     page_1_ids = {m["id"] for m in page_1["results"]}
     page_2_ids = {m["id"] for m in page_2["results"]}
 
-    assert page_1["page"] == 1
-    assert page_2["page"] == 2
-    assert page_1_ids.isdisjoint(page_2_ids), "Pages should not return duplicate movies"
+    overlap = page_1_ids & page_2_ids
+    assert not overlap, f"Pages returned duplicate movies: {overlap}"
 
 
 @pytest.mark.regression
